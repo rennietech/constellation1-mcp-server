@@ -1,0 +1,180 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  GO_VERSION: '1.21'
+
+jobs:
+  build:
+    name: Build Binary
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Build binary
+      env:
+        GOOS: linux
+        GOARCH: amd64
+        CGO_ENABLED: 0
+      run: |
+        go build -a -installsuffix cgo -ldflags="-s -w -X main.version=${{ github.ref_name }}" -o constellation1-mcp-server-linux-amd64 .
+
+    - name: Upload binary artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: constellation1-mcp-server-linux-amd64
+        path: constellation1-mcp-server-linux-amd64
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: constellation1-mcp-server-linux-amd64
+        path: ./
+
+    - name: Generate checksum
+      run: |
+        sha256sum constellation1-mcp-server-linux-amd64 > checksums.txt
+        echo "Generated checksum:"
+        cat checksums.txt
+
+    - name: Get version
+      id: get_version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.get_version.outputs.version }}
+        release_name: Constellation1 MCP Server ${{ steps.get_version.outputs.version }}
+        body: |
+          ## Constellation1 MCP Server ${{ steps.get_version.outputs.version }}
+          
+          A Model Context Protocol (MCP) server for accessing the Constellation1 RESO API.
+          
+          ### Features
+          - OAuth2 authentication with client credentials flow
+          - Comprehensive real estate data querying with OData support
+          - Multiple entity types (Property, Member, Office, Media, etc.)
+          - Pagination and filtering capabilities
+          - Response optimization
+          
+          ### Download
+          - **Linux AMD64**: `constellation1-mcp-server-linux-amd64`
+          
+          ### Installation
+          1. Download the binary
+          2. Make it executable: `chmod +x constellation1-mcp-server-linux-amd64`
+          3. Configure with your RESO API credentials
+          
+          ### Verification
+          SHA256 checksum is provided in `checksums.txt`.
+          
+          ### Documentation
+          See the [README](https://github.com/rennietech/constellation1-mcp-server#readme) for detailed usage instructions.
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Assets
+      run: |
+        gh release upload "${{ steps.get_version.outputs.version }}" constellation1-mcp-server-linux-amd64 --clobber
+        gh release upload "${{ steps.get_version.outputs.version }}" checksums.txt --clobber
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  package:
+    name: Upload to GitHub Packages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: constellation1-mcp-server-linux-amd64
+        path: ./
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create and push package
+      run: |
+        # Create a simple Dockerfile for packaging
+        cat > Dockerfile << 'EOF'
+        FROM scratch
+        COPY constellation1-mcp-server-linux-amd64 /constellation1-mcp-server
+        ENTRYPOINT ["/constellation1-mcp-server"]
+        EOF
+        
+        # Get version
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          VERSION="${{ inputs.version }}"
+        else
+          VERSION="${{ github.ref_name }}"
+        fi
+        
+        # Build and push container
+        docker build -t ghcr.io/rennietech/constellation1-mcp-server:${VERSION} .
+        docker build -t ghcr.io/rennietech/constellation1-mcp-server:latest .
+        
+        docker push ghcr.io/rennietech/constellation1-mcp-server:${VERSION}
+        docker push ghcr.io/rennietech/constellation1-mcp-server:latest
