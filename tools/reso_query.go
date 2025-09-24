@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"reso-mcp-server/api"
-	"reso-mcp-server/config"
+	"github.com/rennietech/constellation1-mcp-server/api"
+	"github.com/rennietech/constellation1-mcp-server/config"
 )
 
 // MCPTool represents an MCP tool

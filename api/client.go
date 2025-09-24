@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"reso-mcp-server/auth"
+	"github.com/rennietech/constellation1-mcp-server/auth"
 )
 
 // Client represents the RESO API client

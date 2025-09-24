@@ -9,10 +9,10 @@ import (
 	"os"
 	"strings"
 
-	"reso-mcp-server/api"
-	"reso-mcp-server/auth"
-	"reso-mcp-server/config"
-	"reso-mcp-server/tools"
+	"github.com/rennietech/constellation1-mcp-server/api"
+	"github.com/rennietech/constellation1-mcp-server/auth"
+	"github.com/rennietech/constellation1-mcp-server/config"
+	"github.com/rennietech/constellation1-mcp-server/tools"
 )
 
 // MCPMessage represents a message in the MCP protocol
@@ -194,7 +194,7 @@ func (s *MCPServer) handleInitialize(msg MCPMessage) MCPMessage {
 			},
 		},
 		ServerInfo: map[string]interface{}{
-			"name":    "reso-mcp-server",
+			"name":    "constellation1-mcp-server",
 			"version": "1.0.0",
 		},
 	}
