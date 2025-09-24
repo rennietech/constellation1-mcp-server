@@ -135,7 +135,7 @@ func (s *MCPServer) handleInitialize(msg MCPMessage) MCPMessage {
 			settings[k] = v
 		}
 	}
-	
+
 	// Extract settings - MCP clients may pass settings in different ways
 	// Method 1: Check if settings are in capabilities
 	if clientCaps, ok := params.Capabilities["settings"].(map[string]interface{}); ok {
@@ -146,7 +146,7 @@ func (s *MCPServer) handleInitialize(msg MCPMessage) MCPMessage {
 			settings[k] = v // JSON-RPC settings override env/args
 		}
 	}
-	
+
 	// Method 2: Check if settings are directly in params (common for some MCP clients)
 	if rawParams, ok := msg.Params.(map[string]interface{}); ok {
 		if settingsData, exists := rawParams["settings"]; exists {
@@ -160,7 +160,7 @@ func (s *MCPServer) handleInitialize(msg MCPMessage) MCPMessage {
 			}
 		}
 	}
-	
+
 	// Method 3: Check if the entire params contains client_id/client_secret directly
 	if rawParams, ok := msg.Params.(map[string]interface{}); ok {
 		if settings == nil {
@@ -290,7 +290,7 @@ func (s *MCPServer) handleToolsCall(msg MCPMessage) MCPMessage {
 func main() {
 	// Configure logging to stderr to avoid interfering with MCP JSON-RPC on stdout
 	log.SetOutput(os.Stderr)
-	
+
 	// Parse command line arguments
 	var clientID = flag.String("client-id", "", "RESO API Client ID")
 	var clientSecret = flag.String("client-secret", "", "RESO API Client Secret")
@@ -300,11 +300,11 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	log.Println("RESO MCP Server starting...")
-	
+
 	// Store settings for later use but don't pre-initialize
 	// This avoids sending any messages before the MCP client is ready
 	envSettings := make(map[string]interface{})
-	
+
 	// 1. Command line arguments (highest priority)
 	if *clientID != "" {
 		envSettings["client_id"] = *clientID
@@ -312,7 +312,7 @@ func main() {
 	if *clientSecret != "" {
 		envSettings["client_secret"] = *clientSecret
 	}
-	
+
 	// 2. Standard environment variables
 	if clientID := os.Getenv("CLIENT_ID"); clientID != "" && envSettings["client_id"] == nil {
 		envSettings["client_id"] = clientID
@@ -320,7 +320,7 @@ func main() {
 	if clientSecret := os.Getenv("CLIENT_SECRET"); clientSecret != "" && envSettings["client_secret"] == nil {
 		envSettings["client_secret"] = clientSecret
 	}
-	
+
 	// 3. RESO-specific environment variables
 	if clientID := os.Getenv("RESO_CLIENT_ID"); clientID != "" && envSettings["client_id"] == nil {
 		envSettings["client_id"] = clientID
@@ -328,7 +328,7 @@ func main() {
 	if clientSecret := os.Getenv("RESO_CLIENT_SECRET"); clientSecret != "" && envSettings["client_secret"] == nil {
 		envSettings["client_secret"] = clientSecret
 	}
-	
+
 	// 4. MCP client may set these specific environment variables
 	if clientID := os.Getenv("MCP_RESO_CLIENT_ID"); clientID != "" && envSettings["client_id"] == nil {
 		envSettings["client_id"] = clientID
@@ -336,7 +336,7 @@ func main() {
 	if clientSecret := os.Getenv("MCP_RESO_CLIENT_SECRET"); clientSecret != "" && envSettings["client_secret"] == nil {
 		envSettings["client_secret"] = clientSecret
 	}
-	
+
 	// Store settings in server for use during initialization
 	if len(envSettings) > 0 {
 		log.Printf("Found settings from environment/args, will use during initialization")
@@ -357,7 +357,7 @@ func main() {
 		}
 
 		response := server.HandleMessage(msg)
-		
+
 		// Only send response if it's not empty (for notifications)
 		if response.JSONRPC != "" {
 			responseBytes, err := json.Marshal(response)
@@ -373,4 +373,3 @@ func main() {
 		log.Printf("Error reading input: %v", err)
 	}
 }
-

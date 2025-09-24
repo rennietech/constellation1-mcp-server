@@ -16,7 +16,7 @@ import (
 
 // Client represents the RESO API client
 type Client struct {
-	baseURL    string
+	baseURL     string
 	oauthClient *auth.OAuthClient
 	httpClient  *http.Client
 }
@@ -51,34 +51,34 @@ func (c *Client) Query(params QueryParams) (*APIResponse, error) {
 
 	// Build URL
 	apiURL := fmt.Sprintf("%s/%s", c.baseURL, params.Entity)
-	
+
 	// Build query parameters
 	queryParams := url.Values{}
-	
+
 	if params.Select != "" {
 		queryParams.Set("$select", params.Select)
 	}
-	
+
 	if params.Filter != "" {
 		queryParams.Set("$filter", params.Filter)
 	}
-	
+
 	if params.Top > 0 {
 		queryParams.Set("$top", strconv.Itoa(params.Top))
 	}
-	
+
 	if params.Skip > 0 {
 		queryParams.Set("$skip", strconv.Itoa(params.Skip))
 	}
-	
+
 	if params.OrderBy != "" {
 		queryParams.Set("$orderby", params.OrderBy)
 	}
-	
+
 	if params.IgnoreNulls {
 		queryParams.Set("$ignorenulls", "true")
 	}
-	
+
 	if params.IgnoreCase {
 		queryParams.Set("$ignorecase", "true")
 	}
@@ -115,7 +115,7 @@ func (c *Client) Query(params QueryParams) (*APIResponse, error) {
 
 	// Read response with decompression support
 	var reader io.Reader = resp.Body
-	
+
 	// Check if response is gzip-compressed
 	if strings.Contains(resp.Header.Get("Content-Encoding"), "gzip") {
 		gzipReader, err := gzip.NewReader(resp.Body)
@@ -125,7 +125,7 @@ func (c *Client) Query(params QueryParams) (*APIResponse, error) {
 		defer gzipReader.Close()
 		reader = gzipReader
 	}
-	
+
 	body, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
@@ -206,8 +206,8 @@ func (c *Client) TestConnection() error {
 
 	// Try a simple query
 	params := QueryParams{
-		Entity: "Property",
-		Top:    1,
+		Entity:      "Property",
+		Top:         1,
 		IgnoreNulls: true,
 	}
 
@@ -218,4 +218,3 @@ func (c *Client) TestConnection() error {
 
 	return nil
 }
-

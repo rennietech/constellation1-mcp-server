@@ -99,4 +99,3 @@ func (c *Config) ToJSON() (string, error) {
 	}
 	return string(data), nil
 }
-

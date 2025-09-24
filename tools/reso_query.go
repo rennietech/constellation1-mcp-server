@@ -235,10 +235,10 @@ func (t *ResoQueryTool) parseArguments(args map[string]interface{}) (*api.QueryP
 // createSummary creates a human-readable summary of the response
 func (t *ResoQueryTool) createSummary(response *api.APIResponse) string {
 	var summary strings.Builder
-	
+
 	summary.WriteString(fmt.Sprintf("RESO API Query Results\n"))
 	summary.WriteString(fmt.Sprintf("======================\n\n"))
-	
+
 	summary.WriteString(fmt.Sprintf("Entity: %s\n", response.RequestParams.Entity))
 	summary.WriteString(fmt.Sprintf("Records Returned: %d\n", response.Count))
 	summary.WriteString(fmt.Sprintf("Total Records Available: %d\n", response.TotalCount))
@@ -286,4 +286,3 @@ func (t *ResoQueryTool) createSummary(response *api.APIResponse) string {
 
 	return summary.String()
 }
-

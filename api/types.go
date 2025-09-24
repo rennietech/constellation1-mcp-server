@@ -19,16 +19,16 @@ type QueryParams struct {
 
 // APIResponse represents the standard RESO API response structure
 type APIResponse struct {
-	Context        string                   `json:"@odata.context"`
-	Count          int                      `json:"@odata.count"`
-	TotalCount     int                      `json:"@odata.totalCount"`
-	Value          []map[string]interface{} `json:"value"`
-	Group          []map[string]interface{} `json:"group,omitempty"`
-	NextLink       string                   `json:"@odata.nextLink,omitempty"`
-	Debug          map[string]interface{}   `json:"debug,omitempty"`
-	RequestTime    time.Time                `json:"request_time"`
-	ResponseTime   time.Duration            `json:"response_time"`
-	RequestParams  QueryParams              `json:"request_params"`
+	Context       string                   `json:"@odata.context"`
+	Count         int                      `json:"@odata.count"`
+	TotalCount    int                      `json:"@odata.totalCount"`
+	Value         []map[string]interface{} `json:"value"`
+	Group         []map[string]interface{} `json:"group,omitempty"`
+	NextLink      string                   `json:"@odata.nextLink,omitempty"`
+	Debug         map[string]interface{}   `json:"debug,omitempty"`
+	RequestTime   time.Time                `json:"request_time"`
+	ResponseTime  time.Duration            `json:"response_time"`
+	RequestParams QueryParams              `json:"request_params"`
 }
 
 // ErrorResponse represents an API error response
@@ -126,7 +126,7 @@ func GetEntitySkipLimit(entity string) int {
 		"RawMlsProperty":    50000,
 		"PropertyUnitTypes": 50000, // Default assumption
 	}
-	
+
 	if limit, exists := limits[entity]; exists {
 		return limit
 	}
@@ -141,4 +141,3 @@ func (r *APIResponse) ToJSON() (string, error) {
 	}
 	return string(data), nil
 }
-

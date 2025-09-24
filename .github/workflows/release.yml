@@ -29,7 +29,7 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
 
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
@@ -50,7 +50,7 @@ jobs:
         go build -a -installsuffix cgo -ldflags="-s -w -X main.version=${{ github.ref_name }}" -o constellation1-mcp-server-linux-amd64 .
 
     - name: Upload binary artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: constellation1-mcp-server-linux-amd64
         path: constellation1-mcp-server-linux-amd64
@@ -88,41 +88,43 @@ jobs:
           echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
         fi
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
+    - name: Create or Update Release
+      run: |
+        # Check if release already exists
+        if gh release view "${{ steps.get_version.outputs.version }}" >/dev/null 2>&1; then
+          echo "Release ${{ steps.get_version.outputs.version }} already exists, deleting it first"
+          gh release delete "${{ steps.get_version.outputs.version }}" --yes
+        fi
+        
+        gh release create "${{ steps.get_version.outputs.version }}" \
+          --title "Constellation1 MCP Server ${{ steps.get_version.outputs.version }}" \
+          --notes "## Constellation1 MCP Server ${{ steps.get_version.outputs.version }}
+        
+        A Model Context Protocol (MCP) server for accessing the Constellation1 RESO API.
+        
+        ### Features
+        - OAuth2 authentication with client credentials flow
+        - Comprehensive real estate data querying with OData support
+        - Multiple entity types (Property, Member, Office, Media, etc.)
+        - Pagination and filtering capabilities
+        - Response optimization
+        
+        ### Download
+        - **Linux AMD64**: \`constellation1-mcp-server-linux-amd64\`
+        
+        ### Installation
+        1. Download the binary
+        2. Make it executable: \`chmod +x constellation1-mcp-server-linux-amd64\`
+        3. Configure with your RESO API credentials
+        
+        ### Verification
+        SHA256 checksum is provided in \`checksums.txt\`.
+        
+        ### Documentation
+        See the [README](https://github.com/rennietech/constellation1-mcp-server#readme) for detailed usage instructions." \
+          --latest
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.get_version.outputs.version }}
-        release_name: Constellation1 MCP Server ${{ steps.get_version.outputs.version }}
-        body: |
-          ## Constellation1 MCP Server ${{ steps.get_version.outputs.version }}
-          
-          A Model Context Protocol (MCP) server for accessing the Constellation1 RESO API.
-          
-          ### Features
-          - OAuth2 authentication with client credentials flow
-          - Comprehensive real estate data querying with OData support
-          - Multiple entity types (Property, Member, Office, Media, etc.)
-          - Pagination and filtering capabilities
-          - Response optimization
-          
-          ### Download
-          - **Linux AMD64**: `constellation1-mcp-server-linux-amd64`
-          
-          ### Installation
-          1. Download the binary
-          2. Make it executable: `chmod +x constellation1-mcp-server-linux-amd64`
-          3. Configure with your RESO API credentials
-          
-          ### Verification
-          SHA256 checksum is provided in `checksums.txt`.
-          
-          ### Documentation
-          See the [README](https://github.com/rennietech/constellation1-mcp-server#readme) for detailed usage instructions.
-        draft: false
-        prerelease: false
 
     - name: Upload Release Assets
       run: |

@@ -130,4 +130,3 @@ func (c *OAuthClient) ClearToken() {
 	c.token = nil
 	c.tokenExpiry = time.Time{}
 }
-
