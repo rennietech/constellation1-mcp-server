@@ -15,16 +15,19 @@ env:
   GO_VERSION: '1.21'
 
 jobs:
-  build:
-    name: Build Binary
+  build-and-release:
+    name: Build and Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ env.GO_VERSION }}
 
@@ -48,30 +51,6 @@ jobs:
         CGO_ENABLED: 0
       run: |
         go build -a -installsuffix cgo -ldflags="-s -w -X main.version=${{ github.ref_name }}" -o constellation1-mcp-server-linux-amd64 .
-
-    - name: Upload binary artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: constellation1-mcp-server-linux-amd64
-        path: constellation1-mcp-server-linux-amd64
-
-  release:
-    name: Create Release
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Download artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: constellation1-mcp-server-linux-amd64
-        path: ./
 
     - name: Generate checksum
       run: |
@@ -97,6 +76,8 @@ jobs:
         fi
         
         gh release create "${{ steps.get_version.outputs.version }}" \
+          constellation1-mcp-server-linux-amd64 \
+          checksums.txt \
           --title "Constellation1 MCP Server ${{ steps.get_version.outputs.version }}" \
           --notes "## Constellation1 MCP Server ${{ steps.get_version.outputs.version }}
         
@@ -126,33 +107,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Upload Release Assets
-      run: |
-        gh release upload "${{ steps.get_version.outputs.version }}" constellation1-mcp-server-linux-amd64 --clobber
-        gh release upload "${{ steps.get_version.outputs.version }}" checksums.txt --clobber
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  package:
-    name: Upload to GitHub Packages
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Download artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: constellation1-mcp-server-linux-amd64
-        path: ./
-
     - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v4
+      uses: docker/login-action@v3
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -168,11 +124,7 @@ jobs:
         EOF
         
         # Get version
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          VERSION="${{ inputs.version }}"
-        else
-          VERSION="${{ github.ref_name }}"
-        fi
+        VERSION="${{ steps.get_version.outputs.version }}"
         
         # Build and push container
         docker build -t ghcr.io/rennietech/constellation1-mcp-server:${VERSION} .
