@@ -28,7 +28,40 @@ type MCPContent struct {
 	Text string `json:"text"`
 }
 
-// ResoQueryTool implements the reso_query MCP tool
+// ResoQueryTool implements the reso_query MCP tool for querying RESO standard real estate data
+//
+// Common Use Cases and Examples:
+//
+// 1. Property Search Examples:
+//   - Active homes in Seattle: entity="Property", filter="StandardStatus eq 'Active' and City eq 'Seattle'"
+//   - Luxury condos: entity="Property", filter="PropertySubType eq 'Condominium' and ListPrice gt 1000000"
+//   - Recently sold homes: entity="Property", filter="StandardStatus eq 'Closed' and CloseDate ge 2024-01-01"
+//   - Homes with specific features: entity="Property", filter="BedroomsTotal ge 3 and BathroomsTotal ge 2 and LivingArea gt 2000"
+//
+// 2. Agent Research Examples:
+//   - Find agent by name: entity="Member", filter="MemberFullName eq 'John Smith'"
+//   - Agents in specific office: entity="Member", filter="OfficeName eq 'Keller Williams'"
+//   - Agents with designations: entity="Member", filter="MemberDesignation has 'GRI'"
+//
+// 3. Market Analysis Examples:
+//   - Price trends: entity="Property", select="ListPrice,CloseDate,City", filter="StandardStatus eq 'Closed'", orderby="CloseDate desc"
+//   - Days on market analysis: entity="Dom", select="DaysOnMarket,CumulativeDaysOnMarket", orderby="DaysOnMarket desc"
+//
+// 4. Media and Marketing:
+//   - Property photos: entity="Media", filter="ResourceRecordKey eq 'LISTING_KEY' and MediaCategory eq 'Photo'"
+//   - Virtual tours: entity="Media", filter="MediaCategory eq 'BrandedVirtualTour'"
+//   - Property with photos: entity="Property", expand="Media($filter=Permission ne 'Private')"
+//
+// 5. Advanced Expand Queries:
+//   - Property with public photos: entity="Property", expand="Media($filter=MediaCategory eq 'Photo' and Permission ne 'Private';$orderby=Order asc)"
+//   - Property with open houses: entity="Property", expand="OpenHouse($filter=OpenHouseStartTime gt now())"
+//   - Complete property package: entity="Property", expand="Media($filter=Permission ne 'Private'),OpenHouse,Dom"
+//
+// StandardStatus Values: Active, ActiveUnderContract, Canceled, Closed, ComingSoon, Delete, Expired, Hold, Incomplete, Pending, Withdrawn, OffMarket
+// PropertyType Values: Residential, ResidentialIncome, ResidentialLease, CommercialSale, CommercialLease, BusinessOpportunity, Farm, Land, ManufacturedInPark
+// PropertySubType Values: SingleFamilyResidence, Condominium, Townhouse, Duplex, Triplex, Quadruplex, ManufacturedHome, Farm, UnimprovedLand, etc.
+// MediaCategory Values: Photo, Video, BrandedVideo, UnbrandedVideo, BrandedVirtualTour, UnbrandedVirtualTour, FloorPlan, Document
+// Permission Values: Public (MediaURL available), Private (MediaURL not available)
 type ResoQueryTool struct {
 	client *api.Client
 	config *config.Config
@@ -46,13 +79,13 @@ func NewResoQueryTool(client *api.Client, cfg *config.Config) *ResoQueryTool {
 func (t *ResoQueryTool) GetToolDefinition() MCPTool {
 	return MCPTool{
 		Name:        "reso_query",
-		Description: "Query the RESO standard API for real estate data with comprehensive filtering and selection options. Supports all major entities including Property, Member, Office, Media, OpenHouse, Dom, PropertyUnitTypes, PropertyRooms, and RawMlsProperty.",
+		Description: "Query the RESO (Real Estate Standards Organization) API for comprehensive real estate data. This tool provides access to MLS (Multiple Listing Service) data including property listings, agent information, office details, media files, and market analytics. Perfect for real estate research, market analysis, property searches, and lead generation. Supports advanced filtering, sorting, and field selection with standardized RESO field names for consistent data access across different MLS systems.",
 		InputSchema: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
 				"entity": map[string]interface{}{
 					"type":        "string",
-					"description": "Entity type to query",
+					"description": "RESO Entity to query. Choose based on your data needs:\n\n• **Property** - Primary real estate listings with comprehensive property details (address, price, features, status, agent info, etc.). Use for: searching homes, analyzing market data, getting listing details. Key fields: ListingKey, StandardStatus, ListPrice, PropertyType, PropertySubType, StreetNumber, City, StateOrProvince, PostalCode, BedroomsTotal, BathroomsTotal, LivingArea, YearBuilt, ListAgentFullName, PublicRemarks.\n\n• **Member** - MLS agents/members with contact information and credentials. Use for: finding agent details, contact information, professional designations. Key fields: MemberMlsId, MemberFullName, MemberEmail, MemberDirectPhone, OfficeKey, MemberDesignation.\n\n• **Office** - Real estate offices/brokerages. Use for: finding office information, brokerage details. Key fields: OfficeMlsId, OfficeName, OfficePhone, OfficeEmail, OfficeAddress1, OfficeCity.\n\n• **Media** - Photos, videos, virtual tours, and documents associated with listings. Use for: getting listing media, photos, virtual tours. Key fields: MediaKey, ResourceRecordKey (links to ListingKey), MediaType, MediaCategory, MediaURL, MediaStatus.\n\n• **OpenHouse** - Scheduled open house events. Use for: finding open houses, event scheduling. Key fields: OpenHouseKey, ListingKey, OpenHouseStartTime, OpenHouseEndTime, OpenHouseRemarks.\n\n• **Dom** - Days on Market tracking data. Use for: market timing analysis, DOM calculations. Key fields: ListingId, DaysOnMarket, CumulativeDaysOnMarket.\n\n• **PropertyUnitTypes** - Unit type details for multi-unit properties (apartments, condos). Use for: rental properties, multi-family analysis. Key fields: ListingKey, UnitTypeDescription, UnitTypeBedsTotal, UnitTypeBathsTotal, UnitTypeActualRent.\n\n• **PropertyRooms** - Detailed room-by-room information. Use for: detailed property layouts, room specifications. Key fields: ListingKey, RoomType, RoomDimensions, RoomFeatures, RoomLevel.\n\n• **RawMlsProperty** - Raw MLS data fields (original unprocessed data). Use for: accessing MLS-specific fields not in standardized Property entity.",
 					"enum": []string{
 						"Property", "Member", "Office", "Media", "OpenHouse",
 						"Dom", "PropertyUnitTypes", "PropertyRooms", "RawMlsProperty",
@@ -60,35 +93,39 @@ func (t *ResoQueryTool) GetToolDefinition() MCPTool {
 				},
 				"select": map[string]interface{}{
 					"type":        "string",
-					"description": "Comma-separated list of fields to return (e.g., 'ListingKey,StreetNumberNumeric,StandardStatus')",
+					"description": "Comma-separated list of fields to return. Leave empty to get all available fields. For Property entity, common fields include:\n• **Identifiers**: ListingKey, ListingId, MlsStatus\n• **Address**: StreetNumber, StreetName, City, StateOrProvince, PostalCode, UnparsedAddress\n• **Pricing**: ListPrice, ClosePrice, OriginalListPrice, PreviousListPrice\n• **Property Details**: PropertyType, PropertySubType, BedroomsTotal, BathroomsTotal, LivingArea, YearBuilt, LotSizeSquareFeet\n• **Status & Dates**: StandardStatus, OnMarketTimestamp, ModificationTimestamp, DaysOnMarket\n• **Agent Info**: ListAgentFullName, ListAgentEmail, ListAgentDirectPhone, ListOfficeName\n• **Features**: PublicRemarks, Appliances, Heating, Cooling, ParkingFeatures, ExteriorFeatures\n• **Location**: Latitude, Longitude, MLSAreaMajor, MLSAreaMinor, SchoolDistrict\nExample: 'ListingKey,StandardStatus,ListPrice,BedroomsTotal,City,PublicRemarks'",
 				},
 				"filter": map[string]interface{}{
 					"type":        "string",
-					"description": "OData filter expression using supported operators (eq, ne, gt, ge, lt, le, has, in) and boolean operators (and, or). Example: \"StandardStatus eq 'Active' and ListPrice gt 100000\"",
+					"description": "OData filter expression for querying data. Supports comparison operators (eq, ne, gt, ge, lt, le), collection operators (has, in), and logical operators (and, or, not). Common Property filters:\n\n**Status Filters**:\n• Active listings: \"StandardStatus eq 'Active'\"\n• Recently sold: \"StandardStatus eq 'Closed' and CloseDate ge 2024-01-01\"\n• Under contract: \"StandardStatus eq 'Pending'\"\n\n**Price Filters**:\n• Price range: \"ListPrice ge 200000 and ListPrice le 500000\"\n• Luxury properties: \"ListPrice gt 1000000\"\n\n**Property Features**:\n• Bedrooms: \"BedroomsTotal ge 3\"\n• Bathrooms: \"BathroomsTotal ge 2\"\n• Square footage: \"LivingArea gt 2000\"\n• Year built: \"YearBuilt ge 2000\"\n\n**Location Filters**:\n• By city: \"City eq 'Seattle'\"\n• By state: \"StateOrProvince eq 'WA'\"\n• By zip: \"PostalCode eq '98101'\"\n• By area: \"MLSAreaMajor eq 'Downtown'\"\n\n**Property Type**:\n• Single family: \"PropertySubType eq 'SingleFamilyResidence'\"\n• Condos: \"PropertySubType eq 'Condominium'\"\n• Multi-family: \"PropertyType eq 'ResidentialIncome'\"\n\n**Complex Examples**:\n• \"StandardStatus eq 'Active' and PropertySubType eq 'Condominium' and ListPrice le 400000 and City eq 'Bellevue'\"\n• \"StandardStatus eq 'Closed' and CloseDate ge 2024-01-01 and PropertyType eq 'Residential'\"\n\nNote: Use single quotes for string values, proper date formats (YYYY-MM-DD), and combine with 'and'/'or' operators.",
 				},
 				"top": map[string]interface{}{
 					"type":        "integer",
-					"description": "Number of records to return (default: 10, max recommended: 1000)",
+					"description": "Maximum number of records to return in this request. Use smaller values (10-50) for quick searches, larger values (100-1000) for comprehensive data analysis. Default: 10, Maximum: 1000. For large datasets, use pagination with 'skip' parameter.",
 					"minimum":     1,
 					"maximum":     1000,
 				},
 				"skip": map[string]interface{}{
 					"type":        "integer",
-					"description": "Number of records to skip for pagination (limits vary by entity)",
+					"description": "Number of records to skip for pagination. Used with 'top' to implement paging through large result sets. Skip limits vary by entity: Property (1M), Office/Member (500K), Media/Rooms (50K). Example: skip=0&top=100 for first page, skip=100&top=100 for second page.",
 					"minimum":     0,
 				},
 				"orderby": map[string]interface{}{
 					"type":        "string",
-					"description": "Field(s) to order results by (e.g., 'ListPrice desc' or 'ModificationTimestamp')",
+					"description": "Sort order for results. Format: 'FieldName [asc|desc]'. Multiple fields supported with comma separation. Common patterns:\n• **Price sorting**: 'ListPrice desc' (high to low), 'ListPrice asc' (low to high)\n• **Date sorting**: 'ModificationTimestamp desc' (newest first), 'OnMarketTimestamp desc'\n• **Location sorting**: 'City asc, ListPrice desc'\n• **Size sorting**: 'LivingArea desc, BedroomsTotal desc'\nDefault direction is ascending if not specified. Examples: 'ListPrice desc', 'City asc, ModificationTimestamp desc'",
+				},
+				"expand": map[string]interface{}{
+					"type":        "string",
+					"description": "OData expand clause to include related entities in the response. This powerful feature allows fetching related data in a single query instead of multiple API calls. Common expansions:\n\n**Property Entity Expansions**:\n• **Media**: 'Media' - Include all photos/videos/virtual tours\n• **Media (public only)**: 'Media($filter=Permission ne \\'Private\\')' - Exclude private images\n• **Media (photos only)**: 'Media($filter=MediaCategory eq \\'Photo\\')' - Only photos\n• **OpenHouse**: 'OpenHouse' - Include open house events\n• **Dom**: 'Dom' - Include days on market data\n• **PropertyRooms**: 'PropertyRooms' - Include room details\n• **PropertyUnitTypes**: 'PropertyUnitTypes' - Include unit type data\n\n**Multiple Expansions**: Use comma separation: 'Media,OpenHouse,Dom'\n\n**Filtered Expansions**: Apply filters to expanded entities:\n• 'Media($filter=MediaCategory eq \\'Photo\\' and Permission ne \\'Private\\';$orderby=Order asc)'\n• 'OpenHouse($filter=OpenHouseStartTime gt now())'\n\n**Performance Note**: Expanding large related datasets (like Media) may impact response time. Use filters and selection within expansions to optimize performance.\n\nExample: 'Media($select=MediaURL,MediaCategory,Order;$filter=Permission ne \\'Private\\';$orderby=Order asc)'",
 				},
 				"ignorenulls": map[string]interface{}{
 					"type":        "boolean",
-					"description": "Exclude null fields to reduce payload size (default: true)",
+					"description": "When true, excludes fields with null/empty values from the response to reduce payload size and improve readability. Recommended for most queries unless you specifically need to see which fields are empty. Default: true.",
 					"default":     true,
 				},
 				"ignorecase": map[string]interface{}{
 					"type":        "boolean",
-					"description": "Enable case-insensitive text searches for supported fields (default: false)",
+					"description": "Enable case-insensitive text matching for string comparisons in filters. Useful when searching for cities, agent names, or other text fields where case might vary. Example: with ignorecase=true, \"City eq 'seattle'\" will match 'Seattle', 'SEATTLE', etc. Default: false.",
 					"default":     false,
 				},
 			},
@@ -217,6 +254,11 @@ func (t *ResoQueryTool) parseArguments(args map[string]interface{}) (*api.QueryP
 	// Optional: orderby
 	if orderby, ok := args["orderby"].(string); ok {
 		params.OrderBy = strings.TrimSpace(orderby)
+	}
+
+	// Optional: expand
+	if expand, ok := args["expand"].(string); ok {
+		params.Expand = strings.TrimSpace(expand)
 	}
 
 	// Optional: ignorenulls

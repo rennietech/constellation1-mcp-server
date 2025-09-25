@@ -75,6 +75,10 @@ func (c *Client) Query(params QueryParams) (*APIResponse, error) {
 		queryParams.Set("$orderby", params.OrderBy)
 	}
 
+	if params.Expand != "" {
+		queryParams.Set("$expand", params.Expand)
+	}
+
 	if params.IgnoreNulls {
 		queryParams.Set("$ignorenulls", "true")
 	}
@@ -218,3 +222,4 @@ func (c *Client) TestConnection() error {
 
 	return nil
 }
+

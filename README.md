@@ -16,7 +16,7 @@ A Model Context Protocol (MCP) server for accessing the Constellation1 RESO (Rea
 chmod +x constellation1-mcp-server-darwin-arm64
 mv constellation1-mcp-server-darwin-arm64 /usr/local/bin/
 
-# For Linux  
+# For Linux
 chmod +x constellation1-mcp-server-linux-amd64
 mv constellation1-mcp-server-linux-amd64 /usr/local/bin/
 ```
@@ -31,7 +31,7 @@ mv constellation1-mcp-server-linux-amd64 /usr/local/bin/
     "args": [
       "-client-id",
       "your_client_id_here",
-      "-client-secret", 
+      "-client-secret",
       "your_client_secret_here"
     ]
   }
@@ -57,12 +57,21 @@ Replace `your_client_id_here` and `your_client_secret_here` with your actual RES
 
 ## Features
 
-- **OAuth2 Authentication**: Secure client credentials flow
-- **Comprehensive Querying**: Support for all OData operators and boolean logic
+- **OAuth2 Authentication**: Secure client credentials flow with automatic token management
+- **Comprehensive Querying**: Full OData support with filtering, sorting, and field selection
+- **Entity Expansion**: Fetch related entities in a single query (Property + Media, OpenHouse, etc.)
 - **Multiple Entities**: Access to Property, Member, Office, Media, OpenHouse, Dom, PropertyUnitTypes, PropertyRooms, and RawMlsProperty
-- **Pagination Support**: Both client-side and server-side pagination
+- **Private Image Handling**: Respects MLS privacy controls with Permission field filtering
+- **Dynamic Image Sizing**: Support for thumbnail, small, large, and custom image dimensions
+- **Pagination Support**: Both client-side and server-side pagination with configurable limits
 - **Case-Insensitive Search**: For supported text fields
-- **Response Optimization**: Null field exclusion to reduce payload size
+- **Response Optimization**: Automatic compression (gzip/deflate/brotli) and null field exclusion
+- **Performance Optimized**: Built-in best practices for efficient API usage
+- **Dynamic Metadata Parsing**: Automatically loads constellation1_metadata.xml for accurate, up-to-date field information
+- **Live Metadata Fallback**: Fetches metadata from API endpoint when local file unavailable  
+- **Integrated Documentation**: Built-in help system and MCP resources for field reference and examples
+- **MCP Resources Support**: Access documentation directly through MCP protocol
+- **Self-Updating Field Reference**: Dynamic content generation from actual RESO metadata
 
 ## Installation
 
@@ -117,39 +126,113 @@ export RESO_BASE_URL="https://listings.cdatalabs.com/odata"
 
 ## Usage
 
-The server provides a single tool: `reso_query`
+The server provides comprehensive tools and resources:
+
+### 🔧 **Tools Available:**
+- **`reso_query`** - Query RESO API for real estate data
+- **`reso_help`** - Get field reference, examples, and best practices
+
+### 📚 **Resources Available:**
+- **RESO Field Reference Guide** - Comprehensive field and entity documentation
+- **RESO Query Quick Start** - Common query patterns and examples
+
+Access resources via MCP resources/list and resources/read methods.
+
+> 📖 **For detailed field reference and examples, see [RESO_FIELD_REFERENCE.md](RESO_FIELD_REFERENCE.md)**
 
 ### Tool Parameters
 
-- **entity** (required): Entity type to query
-  - `Property` - Real Estate Listing
-  - `Member` - MLS Agent
-  - `Office` - MLS Office
-  - `Media` - Photos, Virtual Tours, etc.
-  - `OpenHouse` - Open House Events
-  - `Dom` - Days on Market
-  - `PropertyUnitTypes` - Property Units
-  - `PropertyRooms` - Property Rooms
-  - `RawMlsProperty` - Raw Mls Data Fields
+- **entity** (required): RESO Entity type to query
+  - `Property` - Primary real estate listings with comprehensive property details
+  - `Member` - MLS agents/members with contact information and credentials
+  - `Office` - Real estate offices and brokerages
+  - `Media` - Property media (photos, videos, virtual tours, documents)
+  - `OpenHouse` - Scheduled open house events
+  - `Dom` - Days on Market tracking data
+  - `PropertyUnitTypes` - Unit details for multi-unit properties
+  - `PropertyRooms` - Detailed room-by-room information
+  - `RawMlsProperty` - Original unprocessed MLS data fields
 
-- **select** (optional): Comma-separated list of fields to return
-  - Example: `"ListingKey,StreetNumberNumeric,StandardStatus"`
+- **select** (optional): Comma-separated list of specific fields to return
+  - Leave empty to get all available fields
+  - Common Property fields: `ListingKey,StandardStatus,ListPrice,BedroomsTotal,City,PublicRemarks`
+  - See [RESO_FIELD_REFERENCE.md](RESO_FIELD_REFERENCE.md) for complete field lists
 
-- **filter** (optional): OData filter expression
-  - Comparison operators: `eq`, `ne`, `gt`, `ge`, `lt`, `le`, `has`, `in`
-  - Boolean operators: `and`, `or`
-  - Example: `"StandardStatus eq 'Active' and ListPrice gt 100000"`
+- **filter** (optional): OData filter expression for data querying
+  - Status: `"StandardStatus eq 'Active'"`
+  - Price range: `"ListPrice ge 200000 and ListPrice le 500000"`
+  - Location: `"City eq 'Seattle' and StateOrProvince eq 'WA'"`
+  - Features: `"BedroomsTotal ge 3 and BathroomsTotal ge 2"`
+  - See [RESO_FIELD_REFERENCE.md](RESO_FIELD_REFERENCE.md) for comprehensive filter examples
 
-- **top** (optional): Number of records to return (default: 10, max: 1000)
+- **top** (optional): Maximum records to return (default: 10, max: 1000)
+  - Use 10-50 for quick searches, 100-1000 for comprehensive analysis
 
-- **skip** (optional): Number of records to skip for pagination
+- **skip** (optional): Records to skip for pagination
+  - Limits vary by entity (Property: 1M, Office/Member: 500K, Media: 50K)
 
-- **orderby** (optional): Field(s) to order results by
-  - Example: `"ListPrice desc"` or `"ModificationTimestamp"`
+- **orderby** (optional): Sort order for results
+  - Format: `"FieldName [asc|desc]"`
+  - Examples: `"ListPrice desc"`, `"City asc, ModificationTimestamp desc"`
 
-- **ignorenulls** (optional): Exclude null fields (default: true)
+- **expand** (optional): Include related entities in the response
+  - Property + Media: `"Media($filter=Permission ne 'Private')"`
+  - Property + Open Houses: `"OpenHouse"`
+  - Multiple entities: `"Media,OpenHouse,Dom"`
+  - See [RESO_FIELD_REFERENCE.md](RESO_FIELD_REFERENCE.md) for comprehensive expand examples
 
-- **ignorecase** (optional): Case-insensitive text searches (default: false)
+- **ignorenulls** (optional): Exclude null/empty fields to reduce payload size (default: true)
+
+- **ignorecase** (optional): Enable case-insensitive text matching (default: false)
+
+## reso_help Tool
+
+Get instant access to field reference documentation and query examples:
+
+- **topic** (required): Help topic to retrieve
+  - `entities` - Complete entity guide with use cases and key fields
+  - `fields` - Field reference organized by category
+  - `filters` - Filter pattern examples for all search scenarios
+  - `enums` - Valid enum values (StandardStatus, PropertyType, etc.)
+  - `expand` - Entity expansion examples and best practices
+  - `examples` - Ready-to-use query examples
+  - `performance` - API performance optimization tips
+  - `images` - Image handling and dynamic sizing guide
+  - `overview` - Complete overview of all help topics
+
+**Example**: `{"topic": "examples"}` or `{"topic": "filters"}`
+
+## Dynamic Metadata System
+
+The server automatically loads RESO metadata to provide accurate, up-to-date field information:
+
+### 📊 **Metadata Sources** (in priority order):
+1. **Local File**: `constellation1_metadata.xml` in working directory
+2. **API Endpoint**: Live fetch from `https://listings.constellation1apis.com/$metadata`  
+3. **Static Fallback**: Hardcoded essential field information
+
+### 🔄 **Dynamic Content Available:**
+- **`reso_help('entities')`** - Generated from actual entity definitions (18 entities, 678+ Property fields)
+- **`reso_help('fields')`** - Categorized field reference with types and descriptions
+- **`reso_help('enums')`** - Complete enum values with standard names (200+ enums)
+- **`reso_help('metadata')`** - Shows current metadata status and statistics
+
+### 📁 **Setup for Full Dynamic Content:**
+```bash
+# Option 1: Place metadata file in working directory
+cp constellation1_metadata.xml /path/to/mcp/server/
+
+# Option 2: Download latest from API (requires credentials)
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+     https://listings.constellation1apis.com/\$metadata \
+     > constellation1_metadata.xml
+```
+
+When metadata is available, help content includes:
+- ✅ **All 18 entity types** with actual field counts
+- ✅ **Complete enum definitions** with standard names and descriptions
+- ✅ **Categorized field lists** (9 categories for Property entity)
+- ✅ **Accurate type information** for all fields
 
 ### Example Queries
 
@@ -189,6 +272,41 @@ The server provides a single tool: `reso_query`
   "entity": "Media",
   "filter": "ResourceRecordKey eq 'PROPERTY_KEY_HERE'",
   "top": 20
+}
+```
+
+#### Property with Photos (Using Expand)
+```json
+{
+  "entity": "Property",
+  "filter": "StandardStatus eq 'Active' and City eq 'Seattle'",
+  "expand": "Media($filter=MediaCategory eq 'Photo' and Permission ne 'Private';$orderby=Order asc)",
+  "select": "ListingKey,ListPrice,PublicRemarks,PhotosCount",
+  "top": 5
+}
+```
+
+#### Complete Property Package
+```json
+{
+  "entity": "Property",
+  "filter": "ListingKey eq 'SPECIFIC_LISTING_KEY'",
+  "expand": "Media($filter=Permission ne 'Private'),OpenHouse,Dom",
+  "ignorenulls": true
+}
+```
+
+#### Get Help and Examples
+```json
+{
+  "topic": "examples"
+}
+```
+
+#### Field Reference
+```json
+{
+  "topic": "fields"
 }
 ```
 
