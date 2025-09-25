@@ -44,7 +44,7 @@ jobs:
     - name: Download dependencies
       run: go mod download
 
-    - name: Build binary
+    - name: Build Linux AMD64 binary
       env:
         GOOS: linux
         GOARCH: amd64
@@ -52,10 +52,19 @@ jobs:
       run: |
         go build -a -installsuffix cgo -ldflags="-s -w -X main.version=${{ github.ref_name }}" -o constellation1-mcp-server-linux-amd64 .
 
-    - name: Generate checksum
+    - name: Build Darwin ARM64 binary
+      env:
+        GOOS: darwin
+        GOARCH: arm64
+        CGO_ENABLED: 0
+      run: |
+        go build -a -installsuffix cgo -ldflags="-s -w -X main.version=${{ github.ref_name }}" -o constellation1-mcp-server-darwin-arm64 .
+
+    - name: Generate checksums
       run: |
         sha256sum constellation1-mcp-server-linux-amd64 > checksums.txt
-        echo "Generated checksum:"
+        sha256sum constellation1-mcp-server-darwin-arm64 >> checksums.txt
+        echo "Generated checksums:"
         cat checksums.txt
 
     - name: Get version
@@ -77,6 +86,7 @@ jobs:
         
         gh release create "${{ steps.get_version.outputs.version }}" \
           constellation1-mcp-server-linux-amd64 \
+          constellation1-mcp-server-darwin-arm64 \
           checksums.txt \
           --title "Constellation1 MCP Server ${{ steps.get_version.outputs.version }}" \
           --notes "## Constellation1 MCP Server ${{ steps.get_version.outputs.version }}
@@ -90,16 +100,17 @@ jobs:
         - Pagination and filtering capabilities
         - Response optimization
         
-        ### Download
+        ### Downloads
         - **Linux AMD64**: \`constellation1-mcp-server-linux-amd64\`
+        - **macOS Apple Silicon (ARM64)**: \`constellation1-mcp-server-darwin-arm64\`
         
         ### Installation
-        1. Download the binary
-        2. Make it executable: \`chmod +x constellation1-mcp-server-linux-amd64\`
+        1. Download the appropriate binary for your platform
+        2. Make it executable: \`chmod +x constellation1-mcp-server-*\`
         3. Configure with your RESO API credentials
         
         ### Verification
-        SHA256 checksum is provided in \`checksums.txt\`.
+        SHA256 checksums are provided in \`checksums.txt\`.
         
         ### Documentation
         See the [README](https://github.com/rennietech/constellation1-mcp-server#readme) for detailed usage instructions." \

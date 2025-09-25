@@ -18,12 +18,17 @@ A Model Context Protocol (MCP) server for accessing the Constellation1 RESO (Rea
 - Go 1.21 or later (for building from source)
 - RESO API credentials (client_id and client_secret)
 
-### Using the Binary
+### Using Pre-built Binaries
 
-Download the pre-built macOS/arm64 binary and make it executable:
+Download the appropriate pre-built binary for your platform from the [releases page](https://github.com/rennietech/constellation1-mcp-server/releases):
+
+- **Linux AMD64**: `constellation1-mcp-server-linux-amd64`
+- **macOS Apple Silicon (ARM64)**: `constellation1-mcp-server-darwin-arm64`
+
+Make it executable:
 
 ```bash
-chmod +x constellation1-mcp-server
+chmod +x constellation1-mcp-server-*
 ```
 
 ## Configuration
@@ -38,7 +43,7 @@ Configure in your MCP client with command line arguments:
 {
   "mcpServers": {
     "reso": {
-      "command": "./constellation1-mcp-server",
+      "command": "./constellation1-mcp-server-darwin-arm64",
       "args": [
         "-client-id", "your_client_id_here",
         "-client-secret", "your_client_secret_here"
@@ -207,11 +212,13 @@ cd constellation1-mcp-server
 # Initialize Go modules
 go mod tidy
 
-# Build for macOS ARM64
+# Build for macOS ARM64 (Apple Silicon)
 GOOS=darwin GOARCH=arm64 go build -o constellation1-mcp-server-darwin-arm64
 
-# Build for other platforms
+# Build for Linux AMD64
 GOOS=linux GOARCH=amd64 go build -o constellation1-mcp-server-linux-amd64
+
+# Build for other platforms (if needed)
 GOOS=windows GOARCH=amd64 go build -o constellation1-mcp-server-windows-amd64.exe
 ```
 
