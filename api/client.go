@@ -166,8 +166,8 @@ func (c *Client) GetMetadata() (string, error) {
 		return "", fmt.Errorf("failed to get access token: %w", err)
 	}
 
-	// Create request
-	metadataURL := c.baseURL + "/$metadata"
+	// Create request  
+	metadataURL := strings.TrimSuffix(c.baseURL, "/odata") + "/$metadata"
 	req, err := http.NewRequest("GET", metadataURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
