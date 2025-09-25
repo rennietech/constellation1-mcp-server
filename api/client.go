@@ -222,4 +222,3 @@ func (c *Client) TestConnection() error {
 
 	return nil
 }
-
