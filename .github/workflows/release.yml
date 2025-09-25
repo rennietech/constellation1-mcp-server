@@ -106,29 +106,3 @@ jobs:
           --latest
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Log in to GitHub Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Create and push package
-      run: |
-        # Create a simple Dockerfile for packaging
-        cat > Dockerfile << 'EOF'
-        FROM scratch
-        COPY constellation1-mcp-server-linux-amd64 /constellation1-mcp-server
-        ENTRYPOINT ["/constellation1-mcp-server"]
-        EOF
-        
-        # Get version
-        VERSION="${{ steps.get_version.outputs.version }}"
-        
-        # Build and push container
-        docker build -t ghcr.io/rennietech/constellation1-mcp-server:${VERSION} .
-        docker build -t ghcr.io/rennietech/constellation1-mcp-server:latest .
-        
-        docker push ghcr.io/rennietech/constellation1-mcp-server:${VERSION}
-        docker push ghcr.io/rennietech/constellation1-mcp-server:latest
