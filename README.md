@@ -2,6 +2,10 @@
 
 A Model Context Protocol (MCP) server for accessing the Constellation1 RESO (Real Estate Standards Organization) API. This server provides a single tool for querying real estate data with comprehensive filtering and selection options.
 
+## Quick Install
+
+[![Add to Cursor](https://cursor.com/badge.svg)](https://cursor.com/settings/mcp?name=constellation1-mcp-server&url=https://github.com/rennietech/constellation1-mcp-server)
+
 ## Features
 
 - **OAuth2 Authentication**: Secure client credentials flow
