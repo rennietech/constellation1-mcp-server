@@ -2,9 +2,58 @@
 
 A Model Context Protocol (MCP) server for accessing the Constellation1 RESO (Real Estate Standards Organization) API. This server provides a single tool for querying real estate data with comprehensive filtering and selection options.
 
-## Quick Install
+## Quick Install for Cursor
 
-[![Add to Cursor](https://cursor.com/badge.svg)](https://cursor.com/settings/mcp?name=constellation1-mcp-server&url=https://github.com/rennietech/constellation1-mcp-server)
+### Easy Setup (Copy-Paste Configuration)
+
+**Step 1**: Download the binary for your platform:
+- [macOS Apple Silicon](https://github.com/rennietech/constellation1-mcp-server/releases/latest/download/constellation1-mcp-server-darwin-arm64)
+- [Linux AMD64](https://github.com/rennietech/constellation1-mcp-server/releases/latest/download/constellation1-mcp-server-linux-amd64)
+
+**Step 2**: Make it executable and move to a permanent location:
+```bash
+# For macOS
+chmod +x constellation1-mcp-server-darwin-arm64
+mv constellation1-mcp-server-darwin-arm64 /usr/local/bin/
+
+# For Linux  
+chmod +x constellation1-mcp-server-linux-amd64
+mv constellation1-mcp-server-linux-amd64 /usr/local/bin/
+```
+
+**Step 3**: Add this configuration to your Cursor MCP settings (`Cursor Settings` → `Features` → `Model Context Protocol`):
+
+**For macOS:**
+```json
+{
+  "constellation1-reso": {
+    "command": "/usr/local/bin/constellation1-mcp-server-darwin-arm64",
+    "args": [
+      "-client-id",
+      "your_client_id_here",
+      "-client-secret", 
+      "your_client_secret_here"
+    ]
+  }
+}
+```
+
+**For Linux:**
+```json
+{
+  "constellation1-reso": {
+    "command": "/usr/local/bin/constellation1-mcp-server-linux-amd64",
+    "args": [
+      "-client-id",
+      "your_client_id_here",
+      "-client-secret",
+      "your_client_secret_here"
+    ]
+  }
+}
+```
+
+Replace `your_client_id_here` and `your_client_secret_here` with your actual RESO API credentials.
 
 ## Features
 
@@ -46,7 +95,7 @@ Configure in your MCP client with command line arguments:
 ```json
 {
   "mcpServers": {
-    "reso": {
+    "constellation1-reso": {
       "command": "./constellation1-mcp-server-darwin-arm64",
       "args": [
         "-client-id", "your_client_id_here",
