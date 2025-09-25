@@ -973,12 +973,14 @@ func (t *ResoHelpTool) getMetadataContent() string {
 
 	} else {
 		content.WriteString("❌ **Metadata Parser**: NOT LOADED - Using static fallback content\n\n")
-		content.WriteString("## Metadata File Search Locations\n")
-		content.WriteString("The server searched for constellation1_metadata.xml in:\n")
-		content.WriteString("- Current directory: `./constellation1_metadata.xml`\n")
-		content.WriteString("- Parent directory: `../constellation1_metadata.xml`\n")
-		content.WriteString("- Grandparent directory: `../../constellation1_metadata.xml`\n")
-		content.WriteString("- Docker path: `/opt/metamcp/constellation1_metadata.xml`\n\n")
+		content.WriteString("## Metadata Loading Priority\n")
+		content.WriteString("The server attempts to load metadata in this order:\n")
+		content.WriteString("1. **Cache File**: `/tmp/constellation1_metadata.xml` (fastest, avoids re-download)\n")
+		content.WriteString("2. **API Endpoint**: `https://listings.constellation1apis.com/$metadata` (fetches and caches)\n")
+		content.WriteString("3. **Local Files** (fallback only):\n")
+		content.WriteString("   - Current directory: `./constellation1_metadata.xml`\n")
+		content.WriteString("   - Parent directory: `../constellation1_metadata.xml`\n")
+		content.WriteString("   - Grandparent directory: `../../constellation1_metadata.xml`\n\n")
 
 		content.WriteString("## Impact of Missing Metadata\n")
 		content.WriteString("- ⚠️ `entities` - Using static fallback (may be incomplete)\n")
